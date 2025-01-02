@@ -2,11 +2,7 @@
 
 termux_home="/data/data/com.termux/files/home/"
 termux_bashrc="/data/data/com.termux/files/usr/etc/bash.bashrc"
-download_link_file=".latest_bombsquad_server_download_ln"
 root_fs="/data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu"
-raw_art_link="https://raw.githubusercontent.com/Loup-Garou911XD/bombsquad_server-termux/main/ansi_art.txt"
-raw_get_latest_link="https://raw.githubusercontent.com/Loup-Garou911XD/bombsquad_server-termux/main/get_latest_link.py"
-log_file="/data/data/com.termux/files/home/bombsquad_setup.log"
 echo "beginning">$log_file
 
 #colors
@@ -57,24 +53,6 @@ update_ssl_certificate(){
     run_in_proot 'export DEBIAN_FRONTEND=noninteractive && update-ca-certificates'
 }
 
-proot_install_python(){
-    run_in_proot 'export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y python3.12-dev'
-}
-
-setup_storage(){
-    yes|termux-setup-storage &>>$log_file
-    ln -s /storage/emulated/0 /data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu/root/storage &>>$log_file
-}
-
-
-#downloads and extracts the latest bombsquad server build for arm64
-get_latest_server_build(){
-    curl -so get_latest_link.py $raw_get_latest_link &&
-    proot-distro login ubuntu --termux-home -- python3.12 get_latest_link.py
-    curl $(cat $download_link_file) -o $root_fs/root/bs_server.tar.gz &>>$log_file &&
-    tar -xzf $root_fs/root/bs_server.tar.gz -C $root_fs/root/
-}
-
 
 update_termux(){
     apt update &>>$log_file
@@ -87,9 +65,6 @@ update_ubuntu(){
     run_in_proot 'export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get upgrade -y'
 }
 
-#getting and printing art
-echo ""
-curl -s $raw_art_link
 
 #updating termux
 printf "${red}+-+-Updating Termux packages${clear}\n">>$log_file
@@ -131,41 +106,6 @@ then
 else
     printf "clear\n$login_cmd">>$termux_bashrc
 fi
-
-#setup to access storage in proot-distro
-printf "${red}+-+-Setup up storage?${clear}\n">>$log_file
-printf "${blue}Setting up storage will give termux permission to access your storage and allow you to access it inside proot-distro.\nDo you want to Setup storage${clear}(y/n):"
-read -r setup_storage_yn
-case $setup_storage_yn in
-    y|Y|yes|Yes|YES )
-        with_animation "setup_storage" ;;
-    * )
-	printf "${yellow}Skipping${clear}\n";
-esac
-
-#install python3.12?
-printf "${red}+-+-Install python3.12?${clear}\n">>$log_file
-printf "${blue}Install python3.12${clear}(y/n):" 
-read -r install_python_yn
-case $install_python_yn in
-    y|Y|yes|Yes|YES) 
-	printf "${green}Installing python3.12${clear}\n" ; 
-	    with_animation "proot_install_python" ;;
-    * )
-	printf "${yellow}Skipping${clear}\n";
-esac
-
-#download latest server?
-printf "${red}+-+-Get latest bs version?${clear}\n">>$log_file
-printf "${blue}Get latest bombsquad server${clear}(y/n):" 
-read -r get_latest_server_yn
-case $get_latest_server_yn in
-    y|Y|yes|Yes|YES) 
-	printf "${green}Downloading bombsquad server${clear}\n" ;
-        with_animation "get_latest_server_build" ;;
-    * )
-	printf "${yellow}Skipping${clear}\n";
-esac
 
 printf "${cyan}Finished!${clear}\n"
 printf "${cyan}Finished!${clear}\n">>$log_file
